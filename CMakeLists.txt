@@ -1,7 +1,11 @@
 cmake_minimum_required(VERSION 3.7)
 project(oanda_stream)
 
-find_package(cpprestsdk REQUIRED)
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-add_executable(main main.cpp)
-target_link_libraries(main PRIVATE cpprestsdk::cpprest)
+find_package(cpprestsdk REQUIRED)
+find_package(Boost COMPONENTS thread REQUIRED)
+
+add_executable(${PROJECT_NAME} main.cpp)
+target_link_libraries(${PROJECT_NAME} PRIVATE cpprestsdk::cpprest Boost::thread)
