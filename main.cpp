@@ -1,29 +1,26 @@
 #include <iostream>
 #include <cpprest/http_client.h>
 
-#define API_URL "https://api-fxpractice.oanda.com"
-#define STREAMING_API_URL "https://stream-fxpractice.oanda.com"
+//#define API_TYPE "trade"
+#define API_TYPE "practice"
+#define API_URL "https://api-fx" API_TYPE ".oanda.com"
+#define STREAMING_API_URL "https://stream-fx" API_TYPE ".oanda.com"
 #define API_KEY "ca1d6eace912d78b2ce9914e5c1908b0-af85787edbf26e387a65ece570801de6"
 
 static
-void printJSON(web::json::value v)
-{
-    if (!v.is_null()){
-        // Loop over each element in the object
-        for (auto iter = v.as_object().cbegin(); iter != v.as_object().cend(); ++iter){
-            const std::string &key = iter->first;
-            const web::json::value &value = iter->second;
+std::string account_id;
 
-            if (value.is_object() || value.is_array()){
-                if(key.size() != 0){
-                    std::wcout << "Parent: " << key.c_str() << std::endl;
-                }
-                printJSON(value);
-                if(key.size() != 0){
-                    std::wcout << "End of Parent: " << key.c_str() << std::endl;
-                }
-            }else{
-                std::wcout << "Key: " << key.c_str() << ", Value: " << value.serialize().c_str() << std::endl;
+static
+void parse_list_accounts(web::json::value v)
+{
+    if (!v.is_null() && v.is_object()) {
+        auto obj_val = v.as_object().at("accounts");
+        if (obj_val.is_array()) {
+            const auto arr = obj_val.as_array();
+            for (const auto &arr_val: arr) {
+                account_id = arr_val.at("id").serialize();
+                std::cout << "Account ID: " << arr_val.at("id").serialize() << std::endl;
+                //TODO: expecting a single account
             }
         }
     }
@@ -48,8 +45,8 @@ void list_accounts()
             .then([](pplx::task<web::json::value> previousTask){
         try{
             const web::json::value & v = previousTask.get();
-            std::cout << "Got JSON reply " << v << std::endl;
-            printJSON(v);
+            std::cout << "JSON reply " << v << std::endl;
+            parse_list_accounts(v);
         } catch(const web::http::http_exception &e){
             std::cout << e.what() << std::endl;
         }
@@ -59,6 +56,12 @@ void list_accounts()
     } catch(std::exception &e){
         std::cout << e.what() << std::endl;
     }
+}
+
+static
+void subscribe_pricing_stream()
+{
+
 }
 
 int main()
