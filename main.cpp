@@ -1,5 +1,6 @@
 #include <iostream>
 #include <algorithm>
+#include <thread>
 #include <cpprest/http_client.h>
 
 //#define API_TYPE "trade"
@@ -64,6 +65,22 @@ void list_accounts()
 }
 
 static
+pplx::task<void> repeat(Concurrency::streams::istream bodyStream, size_t chunkSize,
+  size_t lenRead)
+{
+    Concurrency::streams::container_buffer<std::string> buffer;
+
+    return pplx::create_task([=] {
+        auto t = bodyStream.read_to_delim(buffer, '\n').get();
+        std::cout << "Read from stream " << buffer.collection() << std::endl;
+        return t;
+    }).then([=](int bytesRead) {
+        std::cout << "Bytes read " << bytesRead << std::endl;
+        return repeat(bodyStream, chunkSize, lenRead + bytesRead);
+    });
+}
+
+static
 void subscribe_pricing_stream()
 {
     web::uri_builder uri_bld;
@@ -77,23 +94,22 @@ void subscribe_pricing_stream()
     request.headers().add(U("Accept-Datetime-Format"), U("UNIX"));
 
     pplx::task<void> task = client.request(request)
-            .then([](web::http::http_response response)->pplx::task<bytes> {
-            std::cout << "Response" << response.to_string() << std::endl;
-            if(response.status_code() == web::http::status_codes::OK){
-            return response.extract_vector();
-} else {
-            return pplx::task_from_result(bytes());
-};})
-            .then([](pplx::task<bytes> previousTask){
-        try{
-            const bytes &v = previousTask.get();
-            std::cout << "Reply " << v.size() << std::endl;
-        } catch(const web::http::http_exception &e){
-            std::cout << e.what() << std::endl;
-        }
-    });
+        .then([](web::http::http_response response) {
+            if(response.status_code() == web::http::status_codes::OK) {
+                concurrency::streams::istream bodyStream = response.body();
+                std::cout << "Valid stream " << bodyStream.is_valid() << std::endl;
+                repeat(bodyStream, 8192, 0).then([]
+                {
+                    std::wcout << L"Completed." << std::endl;
+                }).wait();
+            } else {
+                std::cout << "Error" << response.status_code() << std::endl;
+            }
+        });
     try{
-        task.wait();
+        std::cout << "Start task" << std::endl;
+        task.get();
+        std::cout << "Stop task" << std::endl;
     } catch(std::exception &e){
         std::cout << e.what() << std::endl;
     }
