@@ -74,6 +74,7 @@ void subscribe_pricing_stream()
 
     web::http::http_request request(web::http::methods::GET);
     request.headers().add(U("Authorization"), U("Bearer ") U(API_KEY));
+    request.headers().add(U("Accept-Datetime-Format"), U("UNIX"));
 
     pplx::task<void> task = client.request(request)
             .then([](web::http::http_response response)->pplx::task<bytes> {
@@ -85,7 +86,7 @@ void subscribe_pricing_stream()
 };})
             .then([](pplx::task<bytes> previousTask){
         try{
-            const bytes & v = previousTask.get();
+            const bytes &v = previousTask.get();
             std::cout << "Reply " << v.size() << std::endl;
         } catch(const web::http::http_exception &e){
             std::cout << e.what() << std::endl;
