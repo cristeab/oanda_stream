@@ -7,9 +7,7 @@
 #define API_TYPE "practice"
 #define API_URL "https://api-fx" API_TYPE ".oanda.com"
 #define STREAMING_API_URL "https://stream-fx" API_TYPE ".oanda.com"
-#define API_KEY "ca1d6eace912d78b2ce9914e5c1908b0-af85787edbf26e387a65ece570801de6"
-
-typedef std::vector<uint8_t> bytes;
+#define API_KEY "<REST API access key>"
 
 static
 utility::string_t account_id;
